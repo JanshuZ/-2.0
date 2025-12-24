@@ -7,6 +7,13 @@ let fleetData = [];
 let tableData = [];
 let filteredData = [];
 
+// 缓存变量
+let cachedData = null;
+let cachedOrgId = null;
+let cachedDate = null;
+let cachedViolationCount = null;
+let cachedNormalCount = null;
+
 // DOM元素
 const fleetSelector = document.getElementById('fleetSelector');
 const reportDate = document.getElementById('reportDate');
@@ -37,10 +44,10 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // 初始化页面
 function initializePage() {
-    // 设置默认日期（今天）
-    const today = new Date();
-    const formattedToday = formatDateForInput(today);
-    reportDate.value = formattedToday;
+    // 设置默认日期（2025年12月23日）
+    const defaultDate = new Date('2025-12-23');
+    const formattedDefaultDate = formatDateForInput(defaultDate);
+    reportDate.value = formattedDefaultDate;
     
     // 加载车队数据
     loadFleetData();
@@ -55,6 +62,25 @@ function bindEvents() {
     exportBtn.addEventListener('click', handleExport);
     importBtn.addEventListener('click', handleImport);
     importFileInput.addEventListener('change', handleFileSelect);
+    
+    // 车队选择器和日期选择器变化时清除缓存
+    fleetSelector.addEventListener('change', function() {
+        // 清除缓存，因为搜索条件可能发生变化
+        cachedData = null;
+        cachedOrgId = null;
+        cachedDate = null;
+        cachedViolationCount = null;
+        cachedNormalCount = null;
+    });
+    
+    reportDate.addEventListener('change', function() {
+        // 清除缓存，因为搜索条件可能发生变化
+        cachedData = null;
+        cachedOrgId = null;
+        cachedDate = null;
+        cachedViolationCount = null;
+        cachedNormalCount = null;
+    });
     
     // 只有当快速搜索元素存在时才绑定事件
     if (quickSearchBtn) {
@@ -88,27 +114,27 @@ async function loadFleetData() {
         fleetSelector.innerHTML = '<option value="">请选择车队</option>';
         fleetData.forEach(fleet => {
             const option = document.createElement('option');
-            option.value = fleet.id;
-            option.textContent = fleet.name;
+            option.value = fleet.teamId; // 使用teamId作为值
+            option.textContent = fleet.teamName; // 使用teamName作为显示文本
             fleetSelector.appendChild(option);
         });
     } catch (error) {
         console.error('加载车队数据失败:', error);
         // 如果API调用失败，使用模拟数据
         fleetData = [
-            { id: 1, name: '第一车队' },
-            { id: 2, name: '第二车队' },
-            { id: 3, name: '第三车队' },
-            { id: 4, name: '第四车队' },
-            { id: 5, name: '第五车队' }
+            { teamId: '1', teamName: '第一车队' },
+            { teamId: '2', teamName: '第二车队' },
+            { teamId: '3', teamName: '第三车队' },
+            { teamId: '4', teamName: '第四车队' },
+            { teamId: '5', teamName: '第五车队' }
         ];
         
         // 填充车队选择器
         fleetSelector.innerHTML = '<option value="">请选择车队</option>';
         fleetData.forEach(fleet => {
             const option = document.createElement('option');
-            option.value = fleet.id;
-            option.textContent = fleet.name;
+            option.value = fleet.teamId; // 使用teamId作为值
+            option.textContent = fleet.teamName; // 使用teamName作为显示文本
             fleetSelector.appendChild(option);
         });
         
@@ -121,16 +147,39 @@ async function loadTableData() {
     showLoading(true);
     
     try {
-        // 调用API获取车辆运行监控明细
-        const data = await API.getVehicleMonitoringDetails({
-            orgId: fleetSelector.value,
-            date: reportDate.value,
-            page: currentPage,
-            pageSize: pageSize
-        });
+        const currentOrgId = fleetSelector.value;
+        const currentDate = reportDate.value;
         
-        // 处理API返回的数据
-        tableData = processApiData(data);
+        // 检查是否有缓存数据且是同一车队和同一日期
+        if (cachedData && cachedOrgId === currentOrgId && cachedDate === currentDate) {
+            // 使用缓存数据
+            tableData = processApiData(cachedData);
+        } else {
+            // 没有缓存或车队/日期发生变化，重新请求数据
+            const data = await API.getVehicleMonitoringDetails({
+                orgId: currentOrgId,
+                date: currentDate
+            });
+            
+            // 更新缓存
+            cachedData = data;
+            cachedOrgId = currentOrgId;
+            cachedDate = currentDate;
+            
+            // 处理API返回的数据
+            tableData = processApiData(data);
+            
+            // 更新统计信息（使用API返回的统计数据）
+            if (data.vehicleCount !== undefined) {
+                totalRecords = data.vehicleCount;
+            }
+            if (data.violationVehicleCount !== undefined) {
+                cachedViolationCount = data.violationVehicleCount;
+            }
+            if (data.parkedVehicleCount !== undefined) {
+                cachedNormalCount = data.parkedVehicleCount;
+            }
+        }
         
         // 应用快速搜索筛选
         applyQuickSearchFilter();
@@ -174,34 +223,31 @@ async function loadTableData() {
 }
 
 // 处理API返回的数据
-function processApiData(apiData) {
-    // 根据API返回的数据结构进行处理
-    // 这里假设API返回的数据结构与模拟数据结构不同，需要进行转换
+function processApiData(apiResponse) {
+    // 根据API文档，返回的数据结构是VehMonitoringDetailsListRspData
+    // 包含vehMonitoringDetailsList数组，每个元素是车辆运行监控明细
     
-    // 如果API返回的数据已经包含所需字段，直接返回
-    if (apiData && apiData.length > 0 && apiData[0].vehicleNumber) {
-        return apiData.map(item => ({
-            id: item.id,
-            vehicleNumber: item.vehicleNumber || '',
-            driverName: item.driverName || '',
-            startLocation: item.startLocation || '',
-            departureTime: item.departureTime || '',
-            destination: item.destination || '',
-            route: item.route || '',
-            speed: item.speed || '0',
-            arrivalTime: item.arrivalTime || '',
-            mileage: item.mileage || '0',
-            recordContent: item.recordContent || '正常',
-            processingStatus: item.processingStatus || '',
-            isViolation: item.recordContent && item.recordContent !== '正常'
-        }));
+    if (!apiResponse || !apiResponse.vehMonitoringDetailsList) {
+        console.warn('API返回的数据结构不符合预期:', apiResponse);
+        return [];
     }
     
-    // 如果API返回的数据结构与预期不同，需要进行更复杂的转换
-    // 这里可以根据实际API返回的数据结构进行调整
-    
-    // 如果没有数据或数据格式不正确，返回空数组
-    return [];
+    // 将API返回的数据转换为前端需要的格式
+    return apiResponse.vehMonitoringDetailsList.map(item => ({
+        id: item.carId || '',
+        vehicleNumber: item.carPlate || '',
+        driverName: item.driverName || '',
+        startLocation: item.startAddr || '',
+        departureTime: item.startTime || '',
+        destination: item.endAddr || '',
+        route: item.waypoints || '',
+        speed: item.speed || '0',
+        arrivalTime: item.endTime || '',
+        mileage: item.mileage || '0',
+        recordContent: item.driverSafetyAlerts || '正常',
+        processingStatus: item.alertDisposition || '',
+        isViolation: item.driverSafetyAlerts && item.driverSafetyAlerts !== '正常'
+    }));
 }
 
 // 生成模拟数据
@@ -284,6 +330,14 @@ function calculatePagination() {
     }
 }
 
+// 截断文本并添加悬停提示
+function truncateText(text, maxLength = 10) {
+    if (!text || text.length <= maxLength) {
+        return text;
+    }
+    return `<span class="truncate-text" title="${text}">${text.substring(0, maxLength)}...</span>`;
+}
+
 // 更新表格
 function updateTable() {
     if (filteredData.length === 0) {
@@ -314,7 +368,7 @@ function updateTable() {
         row.innerHTML = `
             <td class="text-center">${startIndex + index + 1}</td>
             <td class="text-center">${item.vehicleNumber}</td>
-            <td class="text-center">${item.driverName}</td>
+            <td class="text-center">${truncateText(item.driverName, 8)}</td>
             <td class="text-center">${item.startLocation}</td>
             <td class="text-center">${item.departureTime}</td>
             <td class="text-center">${item.destination}</td>
@@ -337,8 +391,17 @@ function updateTable() {
 
 // 更新统计信息
 function updateStatistics() {
-    const violationCount = filteredData.filter(item => item.isViolation).length;
-    const normalCount = filteredData.filter(item => !item.isViolation).length;
+    // 计算违规车辆和正常车辆数量
+    let violationCount, normalCount;
+    
+    // 从所有数据（不是当前页面数据）中计算违规和正常车辆数量
+    violationCount = tableData.filter(item => item.isViolation).length;
+    normalCount = tableData.filter(item => !item.isViolation).length;
+    
+    // 如果API返回了统计数据，可以用来验证我们的计算是否正确
+    if (cachedViolationCount !== null) {
+        console.log(`API返回违规车辆数: ${cachedViolationCount}, 前端计算违规车辆数: ${violationCount}`);
+    }
     
     totalRecordsElement.textContent = totalRecords;
     violationCountElement.textContent = violationCount;
@@ -412,20 +475,36 @@ function updatePagination() {
 
 // 处理搜索
 function handleSearch() {
+    // 重置分页
     currentPage = 1;
+    
+    // 清空数据
+    tableData = [];
+    filteredData = [];
+    totalRecords = 0;
+    totalPages = 0;
+    
+    // 清除缓存，因为搜索条件可能发生变化
+    cachedData = null;
+    cachedOrgId = null;
+    cachedDate = null;
+    cachedViolationCount = null;
+    cachedNormalCount = null;
+    
+    // 重新加载数据
     loadTableData();
 }
 
 // 处理导出
-function handleExport() {
+async function handleExport() {
     try {
         // 调用API导出车辆运行监控明细
-        API.exportVehicleMonitoringDetails({
+        await API.exportVehicleMonitoringDetails({
             orgId: fleetSelector.value,
             date: reportDate.value
         });
         
-        showSuccessToast('导出请求已发送，请稍后下载文件');
+        showSuccessToast('导出成功');
     } catch (error) {
         console.error('导出失败:', error);
         showErrorToast('导出失败，请稍后重试');

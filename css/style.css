@@ -82,6 +82,62 @@ header {
     max-width: 300px;
 }
 
+/* 截断文本悬停提示样式 */
+.truncate-text {
+    cursor: pointer;
+    position: relative;
+    display: inline-block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.truncate-text:hover::after {
+    content: attr(title);
+    position: absolute;
+    left: 0;
+    top: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    white-space: normal;
+    word-wrap: break-word;
+    max-width: 300px;
+    z-index: 1000;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    transform: translateY(5px);
+}
+
+/* 表格单元格中的截断文本样式 */
+.table td .truncate-text {
+    max-width: 100px;
+}
+
+/* 针对不同列的特殊样式 */
+.table td:nth-child(3) .truncate-text { /* 驾驶员姓名 */
+    max-width: 80px;
+}
+
+.table td:nth-child(4) .truncate-text, /* 开始地点 */
+.table td:nth-child(6) .truncate-text { /* 目的地 */
+    max-width: 120px;
+}
+
+.table td:nth-child(7) .truncate-text { /* 路线 */
+    max-width: 100px;
+}
+
+.table td:nth-child(11) .truncate-text { /* 记录内容 */
+    max-width: 150px;
+}
+
+.table td:nth-child(12) .truncate-text { /* 处理状态 */
+    max-width: 80px;
+}
+
 /* 分页样式 */
 .pagination .page-link {
     color: var(--primary-color);

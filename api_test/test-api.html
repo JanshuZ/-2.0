@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API接口测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin-bottom: 30px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .test-button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        .test-button:hover {
+            background-color: #45a049;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #f9f9f9;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+        .error {
+            background-color: #ffebee;
+            color: #c62828;
+        }
+        .success {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+        }
+    </style>
+</head>
+<body>
+    <h1>API接口测试</h1>
+    
+    <div class="test-section">
+        <h2>获取组织列表</h2>
+        <button class="test-button" onclick="testGetOrganizationList()">测试获取组织列表</button>
+        <div id="orgResult" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>获取车辆运行监控明细列表</h2>
+        <button class="test-button" onclick="testGetVehicleMonitoringDetails()">测试获取车辆监控明细</button>
+        <div id="vehicleResult" class="result"></div>
+    </div>
+
+    <script>
+        // API基础URL
+        const BASE_URL = 'http://ytictdev.natapp1.cc';
+        
+        // 获取组织列表
+        async function testGetOrganizationList() {
+            const resultDiv = document.getElementById('orgResult');
+            resultDiv.textContent = '正在请求...';
+            
+            try {
+                const response = await fetch(`${BASE_URL}/org/getOrgList`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        teamId: '' // 车队ID，为空获取所有组织
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                // 检查数据结构
+                if (data && data.orgList) {
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = `成功获取数据，包含 ${data.orgList.length} 条组织记录：\n${JSON.stringify(data, null, 2)}`;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = `返回数据结构不符合预期：\n${JSON.stringify(data, null, 2)}`;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `请求失败：${error.message}`;
+            }
+        }
+        
+        // 获取车辆运行监控明细列表
+        async function testGetVehicleMonitoringDetails() {
+            const resultDiv = document.getElementById('vehicleResult');
+            resultDiv.textContent = '正在请求...';
+            
+            try {
+                const requestBody = {
+                    monitoringDate: '2025-12-23', // 监控日期
+                    teamIdList: [], // 车队ID列表，空表示所有车队
+                    current: 1, // 当前页
+                    size: 10, // 页大小
+                    sessionId: '' // sessionId
+                };
+                
+                const response = await fetch(`${BASE_URL}/vehicle/getVehMonitoringDetailsList`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestBody)
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                
+                // 检查数据结构
+                if (data && data.vehMonitoringDetailsList) {
+                    resultDiv.className = 'result success';
+                    resultDiv.textContent = `成功获取数据，包含 ${data.vehMonitoringDetailsList.length} 条记录：\n${JSON.stringify(data, null, 2)}`;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = `返回数据结构不符合预期：\n${JSON.stringify(data, null, 2)}`;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `请求失败：${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html>

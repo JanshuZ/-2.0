@@ -1,12 +1,12 @@
 # 江得力项目
 
 ## API Docs
+- 车辆服务接口 [导出车辆运行监控明细列表](https://s.apifox.cn/195fc4bc-54eb-42fd-af9c-011a691a2df6/395188782e0.md): 
 - 车辆服务接口 [获取车辆ACC开关统计](https://s.apifox.cn/195fc4bc-54eb-42fd-af9c-011a691a2df6/394347651e0.md): 
 - 车辆服务接口 [获取车辆里程](https://s.apifox.cn/195fc4bc-54eb-42fd-af9c-011a691a2df6/394748815e0.md): 
 - 车辆服务接口 [获取车辆运行监控明细列表](https://s.apifox.cn/195fc4bc-54eb-42fd-af9c-011a691a2df6/394557317e0.md): 
 - 车辆服务接口 [获取车辆轨迹](https://s.apifox.cn/195fc4bc-54eb-42fd-af9c-011a691a2df6/393766744e0.md): 
 - 车辆服务接口 [获取车辆列表](https://s.apifox.cn/195fc4bc-54eb-42fd-af9c-011a691a2df6/391516115e0.md): 
-- 车辆服务接口 [导出车辆运行监控明细列表](https://s.apifox.cn/195fc4bc-54eb-42fd-af9c-011a691a2df6/395188782e0.md): 
 - 车辆服务接口 [导入车辆报警记录](https://s.apifox.cn/195fc4bc-54eb-42fd-af9c-011a691a2df6/394646181e0.md): 
 - 组织服务接口 [获取组织列表](https://s.apifox.cn/195fc4bc-54eb-42fd-af9c-011a691a2df6/392986078e0.md): 
 - 驾驶员服务接口 [获取驾驶员签到签退记录](https://s.apifox.cn/195fc4bc-54eb-42fd-af9c-011a691a2df6/394328936e0.md): 
